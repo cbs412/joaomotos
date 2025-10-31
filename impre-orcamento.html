@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta Local de Orçamentos - JOÃO MOTOS</title>
+    <style>
+        /* Cores e estilos de tela */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #f8f9fa;
+            --header-color: #343a40;
+            --accent-color: #28a745;
+            --total-color: #007bff; 
+            --default-text-color: #495057; 
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background-color: var(--secondary-color);
+            display: flex;
+            justify-content: center; 
+        }
+        .container {
+            width: 850px; 
+            background-color: white;
+            border: 1px solid #dee2e6;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .main-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--header-color);
+            margin-bottom: 20px;
+        }
+        .search-panel {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .search-panel input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            flex-grow: 1;
+        }
+        .search-panel button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4pt;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        .search-panel button:hover {
+            opacity: 0.8;
+        }
+        #results-container {
+            margin-top: 20px;
+            padding: 15px;
+            min-height: 100px;
+            background-color: white;
+        }
+        /* Card padrão da consulta */
+        .budget-card {
+            border: 2px solid var(--primary-color);
+            padding: 15px;
+            margin-bottom: 25px; 
+            border-radius: 6px;
+            background-color: #f0f8ff;
+            position: relative; 
+        }
+        .budget-card h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+            border-bottom: 1px dashed #adb5bd;
+            padding-bottom: 5px;
+        }
+        .budget-card p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .budget-card strong {
+            color: var(--header-color);
+        }
+        
+        /* --- ESTILOS DA MINI-TABELA DE PRODUTOS (TELA) --- */
+        .products-table-consulta {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--default-text-color); 
+        }
+
+        .products-table-consulta th, .products-table-consulta td {
+            border: 1px solid #ced4da; 
+            padding: 8px 10px; 
+            background-color: white; 
+        }
+
+        .products-table-consulta th {
+            background-color: var(--header-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Larguras em tela */
+        .products-table-consulta .col-qtd {
+            width: 6%; 
+            text-align: center;
+        }
+
+        .products-table-consulta .col-desc {
+            width: 60%; 
+            text-align: left;
+        }
+        
+        .products-table-consulta .col-unit-price {
+            width: 17%; 
+            text-align: right;
+            font-weight: bold; 
+        }
+
+        .products-table-consulta .col-total {
+            width: 17%; 
+            font-weight: bold; 
+            text-align: right;
+        }
+        
+        /* Zebra striping (opcional, para melhorar a leitura em telas) */
+        .products-table-consulta tbody tr:nth-child(even) td {
+            background-color: #f7f7f7; 
+        }
+
+        /* --- ESTILOS DO RODAPÉ DO ORÇAMENTO (TOTAL GERAL) --- */
+        .budget-footer {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 2px solid var(--primary-color);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        
+        .final-total-display {
+            font-size: 1.6em; 
+            font-weight: 900; 
+            color: var(--total-color);
+            padding: 10px 15px;
+            border: 2px solid var(--primary-color); 
+            border-radius: 4px;
+            background-color: #e0f0ff; 
+        }
+
+        /* --- ESTILOS DOS BOTÕES DE AÇÃO --- */
+        .action-edit, .action-print, .action-delete {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 8px; 
+            float: right;
+        }
+        .action-edit {
+            background-color: #ffc107;
+            color: #343a40;
+        }
+        .action-edit:hover {
+             background-color: #e0a800;
+        }
+        .action-print {
+            background-color: var(--accent-color); 
+            color: white;
+        }
+        .action-print:hover {
+            background-color: #218838;
+        }
+        .action-delete {
+            background-color: #dc3545; /* Vermelho */
+            color: white;
+            float: left; 
+        }
+        .action-delete:hover {
+            background-color: #c82333;
+        }
+        
+        /* Estilo do cabeçalho de impressão (escondido na tela) */
+        .print-header {
+            display: none;
+        }
+        
+        /* ======================================================= */
+        /* === ESTILO DE IMPRESSÃO PROFISSIONAL (Estilo Kekel) === */
+        /* ======================================================= */
+        @media print {
+            @page {
+                size: 15cm 21cm; 
+                margin: 0cm; 
+            }
+
+            /* REGRAS DE ISOLAMENTO DE CONTEÚDO E TAMANHO */
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                position: relative; 
+                height: 21cm; 
+                overflow: hidden; 
+                font-family: Arial, sans-serif;
+            }
+            body > *:not(.print-wrapper) { display: none !important; } 
+            
+            .print-wrapper {
+                 position: absolute !important;
+                 top: 0 !important;
+                 left: 0 !important;
+                 width: 100% !important;
+                 height: 100% !important;
+                 margin: 0 !important;
+                 padding: 0 !important; 
+                 visibility: visible !important;
+                 overflow: hidden;
+                 background-color: white !important;
+            }
+            .container, .container * { visibility: hidden !important; }
+
+            /* NOVO CONTAINER PARA A BORDA LIMITADA */
+            #printable-content {
+                 border: 1px solid black; 
+                 width: 95%; 
+                 margin: 0.2cm auto; 
+                 padding-bottom: 0.5cm; 
+                 box-sizing: border-box; 
+                 position: relative; 
+                 display: block;
+                 height: fit-content; 
+            }
+
+
+            /* Todos os elementos internos terão um padding de 0.2cm, adaptando ao novo 95% */
+            .content-area-print {
+                padding: 0 0.1cm; 
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+
+            /* 1. CABEÇALHO GERAL (LOGO + INFO + ORÇAMENTO N°) */
+            .print-header, .print-header * {
+                visibility: visible !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-sizing: border-box;
+            }
+            .print-header {
+                display: block; 
+                padding: 0.3cm 0.1cm 0.1cm 0.1cm !important; 
+                width: 100%;
+            }
+            
+            /* Estrutura de 3 colunas */
+            .header-main-info {
+                display: grid;
+                grid-template-columns: 35% 45% 20%; 
+                border: 1px solid black;
+                font-size: 8px;
+                height: 1.5cm; 
+            }
+            
+            .header-col {
+                border-right: 1px solid black;
+                padding: 2px;
+                line-height: 1.1;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+            }
+            .header-col:last-child {
+                border-right: none;
+            }
+
+            /* Coluna do Logo/Imagem */
+            .logo-col {
+                justify-content: center;
+                align-items: center;
+                padding: 0 !important;
+            }
+            .logo-img-print {
+                width: 100%; 
+                max-height: 1.5cm;
+                object-fit: contain; 
+                border-radius: 0;
+            }
+            
+            /* Coluna de Contato/Endereço */
+            .info-col {
+                padding: 5px !important;
+                justify-content: center;
+            }
+            .info-col strong {
+                 font-size: 10px !important;
+            }
+            .info-col p {
+                margin: 0 !important;
+            }
+
+            /* Coluna do Orçamento N° */
+            .budget-num-col {
+                text-align: center;
+                font-weight: bold;
+                justify-content: center; 
+                align-items: center;
+                padding-top: 2px !important; 
+                font-size: 8px !important; 
+            }
+            .budget-num-col p {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .budget-num-box {
+                border: 1px solid black;
+                margin: 2px 3px; 
+                padding: 1px 2px; 
+                font-size: 11px !important; 
+                line-height: 1.1;
+            }
+            .budget-num-box span {
+                font-size: 12px !important; 
+            }
+
+
+            /* Título "Orçamento" */
+            .orcamento-title {
+                text-align: center;
+                font-size: 16px;
+                font-weight: bold;
+                margin: 5px 0 2px 0 !important;
+            }
+            
+            /* 2. DADOS DO CLIENTE (Blocos com borda) */
+            .client-data-grid {
+                display: grid;
+                grid-template-columns: 45% 30% 25%; 
+                border: 1px solid black;
+                border-bottom: none;
+                font-size: 10px;
+            }
+            .client-data-box {
+                border-right: 1px solid black;
+                padding: 3px 5px;
+                line-height: 1.2;
+                box-sizing: border-box;
+            }
+            .client-data-box:last-child {
+                border-right: none;
+            }
+            
+            /* Linha de Contato/Data/Desconto */
+            .contact-data-grid {
+                display: grid;
+                grid-template-columns: 33.3% 33.3% 33.4%;
+                border: 1px solid black;
+                border-top: none;
+                font-size: 10px;
+            }
+
+            /* 3. TABELA DE PRODUTOS */
+            .products-table-consulta {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 5px !important; 
+                font-size: 9px !important;
+                border: 1px solid black;
+            }
+            .products-table-consulta thead {
+                background-color: #e0e0e0;
+            }
+            .products-table-consulta th {
+                padding: 3px 5px !important;
+                border: 1px solid black !important;
+                font-weight: bold;
+                color: black;
+                background-color: #e0e0e0 !important;
+            }
+            .products-table-consulta td {
+                padding: 4px 5px !important;
+                border-right: 1px solid black !important;
+                border-bottom: 1px dashed #aaa !important; 
+            }
+            .products-table-consulta tr:last-child td {
+                 border-bottom: 1px solid black !important; 
+            }
+            /* Ajuste de largura da tabela (Aumento do font-weight para 900) */
+            .products-table-consulta .col-qtd { 
+                width: 5% !important; 
+                text-align: center; 
+                font-weight: 900 !important; 
+            } 
+            .products-table-consulta .col-desc { 
+                width: 60% !important; 
+                text-align: left; 
+                font-weight: 900 !important; 
+            } 
+            .products-table-consulta .col-unit-price { 
+                width: 15% !important; 
+                text-align: right;
+                font-weight: 900 !important; 
+            } 
+            .products-table-consulta .col-total { 
+                width: 20% !important; 
+                text-align: right; 
+                border-right: none !important;
+                font-weight: 900 !important; 
+            } 
+            
+            /* 4. RODAPÉ DE TOTAIS */
+            .totals-row-print {
+                display: flex;
+                justify-content: flex-end;
+                width: 100%;
+                font-size: 11px;
+                margin-top: 0 !important; 
+            }
+            .totals-box {
+                width: 45%; 
+                border: 1px solid black;
+                border-top: none;
+                border-collapse: collapse;
+            }
+            .totals-row {
+                display: grid;
+                grid-template-columns: 60% 40%;
+                border-bottom: 1px solid black;
+            }
+            .totals-row:last-child {
+                border-bottom: none;
+                font-weight: bold;
+                background-color: #f0f0f0;
+            }
+            .totals-label {
+                padding: 3px 5px;
+                border-right: 1px solid black;
+                font-weight: normal;
+            }
+            .totals-value {
+                 padding: 3px 5px;
+                 text-align: right;
+                 font-weight: bold;
+            }
+
+            /* 5. OBSERVAÇÕES */
+            .obs-box {
+                margin-top: 8px;
+                border: 1px solid black;
+                font-size: 10px;
+                width: 100%; 
+                box-sizing: border-box;
+            }
+            .obs-title {
+                background-color: black;
+                color: white;
+                font-weight: bold;
+                padding: 3px 5px;
+                margin: 0 !important;
+            }
+            .obs-text {
+                padding: 5px;
+                margin: 0 !important;
+                line-height: 1.3;
+            }
+            /* Assinatura (para rodapé da página) */
+            .signature-line {
+                 border-top: 1px solid black;
+                 width: 45%;
+                 margin: 20px auto 5px auto;
+                 text-align: center;
+                 font-size: 10px;
+            }
+
+
+            /* Ocultar elementos de tela */
+            .search-panel, .main-title, h2, hr, .action-edit, .action-print, .action-delete, .budget-card h4, .budget-card hr, .budget-footer { display: none !important; }
+            .budget-card, .budget-card * { border: none !important; padding: 0 !important; margin: 0 !important; }
+
+        }
+        /* ======================================================= */
+    </style>
+</head>
+<body>
+    <div class="print-wrapper">
+        <div class="container">
+            
+            <div class="print-header" id="print-header"></div>
+
+            <div class="main-title">🔎 Consulta de Histórico de Orçamentos (Local)</div>
+            <p style="text-align: center; color: #dc3545; font-style: italic;">
+                *Esta consulta funciona apenas para orçamentos salvos no mesmo navegador e computador.
+            </p>
+
+            <div class="search-panel">
+                <label for="search-term" style="font-weight: 600;">Buscar por Nº do Orçamento ou Placa:</label>
+                <input type="text" id="search-term" placeholder="Ex: 0001 ou ABC-1234">
+                <button onclick="searchData()">Buscar</button>
+                <button onclick="listAllBudgets()">Ver Todos</button>
+            </div>
+
+            <h2>Resultados:</h2>
+            <div id="results-container">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        
+        // FUNÇÃO DE EXCLUSÃO
+        function deleteBudget(key) {
+            const budgetData = JSON.parse(localStorage.getItem(key));
+            const budgetNumber = budgetData ? budgetData.number : 'este orçamento';
+
+            if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o Orçamento Nº ${budgetNumber}? Esta ação não pode ser desfeita.`)) {
+                localStorage.removeItem(key);
+                alert(`Orçamento Nº ${budgetNumber} excluído com sucesso!`);
+                
+                // Atualiza a lista de resultados
+                searchData(); 
+            }
+        }
+        
+        // Função para redirecionar para a edição
+        function editBudget(key) {
+            window.location.href = `orcamento_dinamico.html?key=${key}`;
+        }
+        
+        // FUNÇÃO: Prepara e dispara a impressão
+        function printBudget(budgetKey) {
+            
+            const cardToPrint = document.getElementById(budgetKey);
+            if (!cardToPrint) return;
+
+            // 1. Pega todos os dados do orçamento
+            const budgetData = JSON.parse(localStorage.getItem(budgetKey));
+            const budgetNumber = budgetData.number || 'N/D';
+            const clientName = budgetData.clientName || 'N/D';
+            const vehicle = budgetData.vehicle || 'N/D';
+            const plate = budgetData.plate || 'N/D';
+            const date = budgetData.date || 'N/D';
+            const totalFinal = budgetData.totalFinal || '0,00';
+            const discountPercent = budgetData.discountPercent || 0;
+            const discountValue = budgetData.discountValue || '0,00';
+            const observations = budgetData.observations || 'Nenhuma observação.';
+            
+            // Calculando Subtotal (Total Final + Desconto)
+            const totalFinalFloat = parseFloat(totalFinal.replace('.', '').replace(',', '.'));
+            const discountValueFloat = parseFloat(discountValue.replace('.', '').replace(',', '.'));
+            const subtotalFloat = totalFinalFloat + discountValueFloat;
+            const subtotalFormatted = subtotalFloat.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+
+            // 2. MONTAGEM DA TABELA DE ITENS (Sem a coluna CÓDIGO)
+            let productsTableBody = (budgetData.products || []).map(p => { 
+                const desc = p.desc;
+                const qtd = p.qtd;
+                const unitPrice = p.price ? p.price : '0,00';
+                const total = p.total ? p.total : '0,00';
+                
+                return `
+                    <tr>
+                        <td class="col-qtd">${qtd}x</td>
+                        <td class="col-desc">${desc}</td>
+                        <td class="col-unit-price">R$ ${unitPrice}</td>
+                        <td class="col-total">R$ ${total}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            let productsHtml = `
+                <table class="products-table-consulta">
+                    <thead>
+                        <tr>
+                            <th class="col-qtd">QTD</th>
+                            <th class="col-desc">DESCRIÇÃO</th>
+                            <th class="col-unit-price">PREÇO UNIT.</th>
+                            <th class="col-total">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${productsTableBody || '<tr><td colspan="4" style="text-align:center; border:none !important;">Nenhum item adicionado ao orçamento.</td></tr>'}
+                    </tbody>
+                </table>
+            `;
+
+            // 3. CONSTRUÇÃO DO CONTEÚDO DE IMPRESSÃO COMPLETO
+            const printContentHtml = `
+                <div id="printable-content"> 
+                    <div class="content-area-print">
+                        <h4 class="orcamento-title">ORÇAMENTO DE SERVIÇOS E PEÇAS</h4>
+                        
+                        <div class="header-main-info">
+                            <div class="header-col logo-col">
+                                <img src="joaomotos.png" alt="Logo João Motos" class="logo-img-print">
+                            </div>
+                            <div class="header-col info-col">
+                                <strong>JOÃO MOTOS - OFICINA E PEÇAS</strong>
+                                <p>Rua Tamandaré, 1507 - Campos Eliseos</p>
+                                <p>Rib.Preto/SP - Telef.: (16) 99180-3171</p>
+                            </div>
+                            <div class="header-col budget-num-col">
+                                <p>Criado em:</p>
+                                <p>${date}</p>
+                                <div class="budget-num-box">
+                                    Orçamento N°<br>
+                                    <span>${budgetNumber}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="client-data-grid" style="margin-top: 5px;">
+                            <div class="client-data-box"><strong>Cliente:</strong> ${clientName}</div>
+                            <div class="client-data-box"><strong>Veículo:</strong> ${vehicle}</div>
+                            <div class="client-data-box"><strong>Placa:</strong> ${plate}</div>
+                        </div>
+                        
+                        <div class="contact-data-grid">
+                            <div class="client-data-box" style="border-right: 1px solid black;"><strong>Kms:</strong> N/D</div>
+                            <div class="client-data-box" style="border-right: 1px solid black;"><strong>Celular:</strong> (16) 99180-3171</div>
+                            <div class="client-data-box" style="border-right: none;"><strong>Vendedor:</strong> N/D</div>
+                        </div>
+
+                        ${productsHtml}
+
+                        <div class="totals-row-print">
+                            <div class="totals-box">
+                                <div class="totals-row">
+                                    <div class="totals-label">Subtotal</div>
+                                    <div class="totals-value">R$ ${subtotalFormatted}</div>
+                                </div>
+                                <div class="totals-row">
+                                    <div class="totals-label">Desconto (${discountPercent}%)</div>
+                                    <div class="totals-value">R$ ${discountValue}</div>
+                                </div>
+                                <div class="totals-row">
+                                    <div class="totals-label">TOTAL FINAL</div>
+                                    <div class="totals-value">R$ ${totalFinal}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="obs-box">
+                            <p class="obs-title">Observações:</p>
+                            <p class="obs-text">
+                                ${observations}
+                                <br>
+                                <strong style="color: black;">ATENÇÃO > AS PEÇAS QUE FICAREM NA OFICINA SERÃO SUCATEADAS.</strong>
+                            </p>
+                        </div>
+
+                        <div class="signature-line">
+                            Assinatura do Cliente
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 4. INJETA E IMPRIME
+            const printWrapper = document.querySelector('.print-wrapper');
+            const originalWrapperContent = printWrapper.innerHTML; 
+            
+            printWrapper.innerHTML = printContentHtml; 
+            
+            window.print();
+            
+            // 5. RESTAURA O CONTEÚDO ORIGINAL APÓS IMPRESSÃO
+            setTimeout(() => {
+                printWrapper.innerHTML = originalWrapperContent; 
+                listAllBudgets(); 
+            }, 500); 
+        }
+
+        // Funções de Busca e Exibição de Resultados (INALTERADAS)
+        function getLocalStorageBudgets() {
+            const budgets = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('JOAOMOTOS_BUDGET_')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data && data.number) { 
+                            data.key = key; 
+                            budgets.push(data);
+                        }
+                    } catch (e) {
+                        console.error("Erro ao ler ou parsear orçamento salvo:", key, e);
+                    }
+                }
+            }
+            
+            return budgets.sort((a, b) => {
+                const numA = parseInt(a.number) || 0; 
+                const numB = parseInt(b.number) || 0;
+                return numA - numB;
+            });
+        }
+        
+        function searchData() {
+            const searchTerm = document.getElementById('search-term').value.trim().toUpperCase();
+            const allBudgets = getLocalStorageBudgets();
+            
+            if (allBudgets.length === 0) {
+                document.getElementById('results-container').innerHTML = "<p>Nenhuma base de dados de orçamentos encontrada localmente. Crie um orçamento e salve-o primeiro.</p>";
+                return;
+            }
+
+            if (!searchTerm) {
+                listAllBudgets();
+                return;
+            }
+            
+            const results = allBudgets.filter(budget => 
+                (budget.number && budget.number.toUpperCase().includes(searchTerm)) || 
+                (budget.plate && budget.plate.toUpperCase().includes(searchTerm))
+            );
+
+            displayResults(results, `Busca por: ${searchTerm}`);
+        }
+        
+        function listAllBudgets() {
+            const allBudgets = getLocalStorageBudgets();
+            if (allBudgets.length === 0) {
+                document.getElementById('results-container').innerHTML = "<p>Nenhum orçamento salvo localmente.</p>";
+                return;
+            }
+            displayResults(allBudgets, "Todos os Orçamentos Salvos");
+        }
+
+        function displayResults(results, searchTitle) {
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = '';
+
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `<p>Nenhum orçamento encontrado para: <strong>${searchTitle}</strong></p>`;
+                return;
+            }
+            
+            resultsContainer.innerHTML = `<h3> Resultados para: ${searchTitle} (${results.length} encontrado(s))</h3>`;
+
+            results.forEach(budget => {
+                let productsTableBody = (budget.products || []).map(p => { 
+                    const desc = p.desc;
+                    const qtd = p.qtd;
+                    const unitPrice = p.price ? p.price : '0,00';
+                    const total = p.total ? p.total : '0,00';
+                    
+                    return `
+                        <tr>
+                            <td class="col-qtd">${qtd}x</td>
+                            <td class="col-desc">${desc}</td>
+                            <td class="col-unit-price">R$ ${unitPrice}</td>
+                            <td class="col-total">R$ ${total}</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                let productsHtml = `
+                    <table class="products-table-consulta">
+                        <thead>
+                            <tr>
+                                <th class="col-qtd">QTD</th>
+                                <th class="col-desc">DESCRIÇÃO</th>
+                                <th class="col-unit-price">PREÇO UNIT.</th>
+                                <th class="col-total">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productsTableBody}
+                        </tbody>
+                    </table>
+                `;
+                
+                const cardHtml = `
+                    <div class="budget-card" id="${budget.key}"> 
+                        <button class="action-delete" onclick="deleteBudget('${budget.key}')">🗑️ Excluir</button>
+                        
+                        <button class="action-print" onclick="printBudget('${budget.key}')">🖨️ Imprimir Orçamento</button>
+                        <button class="action-edit" onclick="editBudget('${budget.key}')">✏️ Editar no Formulário</button>
+                        
+                        <h3>Orçamento Nº ${budget.number} | Data: ${budget.date || 'N/D'}</h3>
+                        <p><strong>Cliente:</strong> ${budget.clientName || 'N/D'} | <strong>Veículo:</strong> ${budget.vehicle || 'N/D'} | <strong>Placa:</strong> ${budget.plate || 'N/D'}</p>
+                        <p>
+                            <strong>Desconto Aplicado:</strong> ${budget.discountPercent || 0}% 
+                            (Valor: R$ ${budget.discountValue || '0,00'})
+                        </p>
+                        <hr style="border-top: 1px dashed #adb5bd;">
+                        <h4>Itens (${(budget.products || []).length} item(s)):</h4>
+                        ${productsHtml}
+                        
+                        <div class="budget-footer">
+                            <span style="font-size: 1.2em; font-weight: bold; margin-right: 15px;">TOTAL GERAL:</span>
+                            <span class="final-total-display">R$ ${budget.totalFinal || '0,00'}</span>
+                        </div>
+                        
+                        <hr style="border-top: 1px dashed #adb5bd; margin-top: 15px;">
+                        <p style="font-size: 12px; color: #6c757d;">
+                            <strong>Obs:</strong> ${budget.observations ? budget.observations.substring(0, 200) : 'Nenhuma observação.'}
+                        </p>
+                    </div>
+                `;
+                resultsContainer.innerHTML += cardHtml;
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+             listAllBudgets();
+        });
+
+        document.getElementById('search-term').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchData();
+            }
+        });
+
+    </script>
+</body>
+</html>

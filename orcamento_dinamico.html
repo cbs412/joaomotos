@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Orçamento Dinâmico - JOÃO MOTOS</title>
+    <style>
+        /* Estilos base */
+        :root {
+            --primary-color: #007bff;
+            --header-color: #343a40;
+            --accent-color: #28a745;
+            --total-color: #dc3545; /* Vermelho para destaque de total */
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: var(--header-color);
+            margin-bottom: 25px;
+        }
+
+        /* Campos de Dados do Cliente/Veículo */
+        .client-data-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .form-group input, .form-group textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group-full {
+            grid-column: 1 / -1;
+        }
+        
+        /* Seção de Adicionar Produtos */
+        .add-product-panel {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 100px; /* Descrição, Qtd, Preço, Botão */
+            gap: 10px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            align-items: end;
+        }
+        .add-product-panel button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        .add-product-panel button:hover {
+            opacity: 0.8;
+        }
+
+        /* Tabela de Produtos */
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .products-table th, .products-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .products-table th {
+            background-color: var(--header-color);
+            color: white;
+            font-weight: 600;
+        }
+        .products-table .col-qtd { width: 5%; text-align: center; }
+        .products-table .col-unit-price, .products-table .col-total { width: 15%; text-align: right; }
+        .products-table .col-actions { width: 8%; text-align: center; }
+        .products-table .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .products-table .remove-btn:hover { background-color: #c82333; }
+
+        /* Rodapé e Totais */
+        .budget-footer {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .total-display {
+            text-align: right;
+            border-top: 2px solid var(--primary-color);
+            padding-top: 10px;
+        }
+        .total-display p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .total-display strong {
+            font-size: 1.8em;
+            color: var(--total-color);
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .action-buttons button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        #save-button {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        #save-button:hover { background-color: #0056b3; }
+        #print-button {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        #print-button:hover { background-color: #1e7e34; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Orçamento de Serviços e Peças - JOÃO MOTOS</h1>
+        
+        <div class="client-data-grid">
+             <div class="form-group">
+                <label for="budget-number">Orçamento Nº</label>
+                <input type="text" id="budget-number" value="0001" disabled>
+            </div>
+            <div class="form-group">
+                <label for="date">Data</label>
+                <input type="text" id="date" disabled>
+            </div>
+             <div class="form-group">
+                <label for="plate">Placa</label>
+                <input type="text" id="plate">
+            </div>
+             <div class="form-group">
+                <label for="client-name">Nome do Cliente</label>
+                <input type="text" id="client-name">
+            </div>
+            <div class="form-group">
+                <label for="vehicle">Veículo/Modelo</label>
+                <input type="text" id="vehicle">
+            </div>
+             <div class="form-group">
+                <label for="discount-percent">Desconto (%)</label>
+                <input type="number" id="discount-percent" value="0" min="0" max="100" oninput="updateTotal()">
+            </div>
+            <div class="form-group form-group-full">
+                <label for="observations">Observações (aparecerá no orçamento impresso):</label>
+                <textarea id="observations" rows="2"></textarea>
+            </div>
+        </div>
+
+        <h2>Produtos e Serviços</h2>
+        <div class="add-product-panel">
+            <div class="form-group">
+                <label for="product-desc">Descrição do Item/Serviço</label>
+                <input type="text" id="product-desc">
+            </div>
+            <div class="form-group">
+                <label for="product-qtd">QTD</label>
+                <input type="number" id="product-qtd" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label for="product-price">Preço Unitário (R$)</label>
+                <input type="number" id="product-price" value="0.00" step="0.01" min="0">
+            </div>
+            <button onclick="addProduct()">Adicionar</button>
+        </div>
+
+        <table class="products-table">
+            <thead>
+                <tr>
+                    <th class="col-qtd">QTD</th>
+                    <th>DESCRIÇÃO</th>
+                    <th class="col-unit-price">PREÇO UNIT.</th>
+                    <th class="col-total">TOTAL</th>
+                    <th class="col-actions">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="products-tbody">
+                </tbody>
+        </table>
+
+        <div class="budget-footer">
+             <a href="consulta_local.html" style="text-decoration: none;">
+                <button type="button" style="padding: 12px 20px; background-color: #6c757d; color: white; border-radius: 4px; font-weight: bold; border: none; cursor: pointer;">
+                    &#9664; Voltar para Consulta
+                </button>
+            </a>
+            
+            <div class="total-display">
+                <p>Subtotal: R$ <span id="sub-total">0,00</span></p>
+                <p>Desconto: R$ <span id="discount-value">0,00</span></p>
+                <strong>TOTAL GERAL: R$ <span id="final-total">0,00</span></strong>
+            </div>
+
+            <div class="action-buttons">
+                <button id="save-button" onclick="saveBudget()">💾 Salvar Orçamento</button>
+                <button id="print-button" onclick="window.print()">🖨️ Imprimir Orçamento</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // O SEU NOVO URL DA API DO GOOGLE APPS SCRIPT (Nuvem)
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwuEb4ty0jgfAAI5d6WchkPMt8YiRgRCOviCmFLBdVwn7OKeGPHISm72PWxDpTq3c49cQ/exec';
+
+        let productsArray = [];
+        const LS_PREFIX = 'JOAOMOTOS_BUDGET_';
+
+        // --- Funções de Formatação e Utilitários ---
+        function formatCurrency(value) {
+            // Garante que o valor seja um número de ponto flutuante antes de formatar
+            const num = parseFloat(value);
+            if (isNaN(num)) return '0,00';
+            return num.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        // --- Funções de Manipulação da Tabela de Produtos ---
+        function addProduct() {
+            const descInput = document.getElementById('product-desc');
+            const qtdInput = document.getElementById('product-qtd');
+            const priceInput = document.getElementById('product-price');
+            
+            const desc = descInput.value.trim();
+            const qtd = parseInt(qtdInput.value) || 1;
+            const price = parseFloat(priceInput.value.replace(',', '.')) || 0.00;
+
+            if (desc === "") {
+                alert("Por favor, preencha a descrição do item/serviço.");
+                return;
+            }
+
+            const total = (qtd * price).toFixed(2);
+            
+            const newProduct = {
+                desc: desc,
+                qtd: qtd,
+                price: formatCurrency(price),
+                total: formatCurrency(total)
+            };
+
+            productsArray.push(newProduct);
+            
+            // Limpa os campos de adição
+            descInput.value = '';
+            qtdInput.value = '1';
+            priceInput.value = '0.00';
+            descInput.focus();
+
+            renderProducts();
+            updateTotal();
+        }
+
+        function removeProduct(index) {
+            productsArray.splice(index, 1);
+            renderProducts();
+            updateTotal();
+        }
+
+        function renderProducts() {
+            const tbody = document.getElementById('products-tbody');
+            tbody.innerHTML = '';
+            
+            if (productsArray.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #6c757d;">Nenhum item adicionado.</td></tr>';
+                 return;
+            }
+
+            productsArray.forEach((product, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="col-qtd">${product.qtd}x</td>
+                    <td>${product.desc}</td>
+                    <td class="col-unit-price">R$ ${product.price}</td>
+                    <td class="col-total">R$ ${product.total}</td>
+                    <td class="col-actions"><button class="remove-btn" onclick="removeProduct(${index})">X</button></td>
+                `;
+            });
+        }
+        
+        // --- Funções de Cálculo ---
+        function updateTotal() {
+            let subtotal = 0;
+            productsArray.forEach(p => {
+                 // Converte o total formatado (string) de volta para float para cálculo
+                const totalFloat = parseFloat(p.total.replace('.', '').replace(',', '.'));
+                subtotal += totalFloat;
+            });
+
+            const discountPercent = parseFloat(document.getElementById('discount-percent').value) || 0;
+            const discountValue = (subtotal * (discountPercent / 100));
+            const totalFinal = subtotal - discountValue;
+            
+            // Atualiza o display
+            document.getElementById('sub-total').innerText = formatCurrency(subtotal);
+            document.getElementById('discount-value').innerText = formatCurrency(discountValue);
+            document.getElementById('final-total').innerText = formatCurrency(totalFinal);
+        }
+
+        // --- Funções de Coleta de Dados e Salvamento ---
+
+        function collectBudgetData() {
+            const finalTotalElement = document.getElementById('final-total');
+            const subTotalElement = document.getElementById('sub-total');
+            const discountValueElement = document.getElementById('discount-value');
+
+            // Formatação dos totais (pega o valor puro do elemento, sem o "R$ ")
+            const totalFinal = finalTotalElement.innerText.replace('R$ ', '').trim();
+            const subTotal = subTotalElement.innerText.replace('R$ ', '').trim();
+            const discountValue = discountValueElement.innerText.replace('R$ ', '').trim();
+            
+            const budgetNumber = document.getElementById('budget-number').value;
+            const key = budgetNumber ? LS_PREFIX + budgetNumber : LS_PREFIX + new Date().getTime(); // Usa o número como chave
+
+            return {
+                key: key,
+                number: budgetNumber,
+                date: document.getElementById('date').value,
+                clientName: document.getElementById('client-name').value.trim(),
+                vehicle: document.getElementById('vehicle').value.trim(),
+                plate: document.getElementById('plate').value.trim(),
+                discountPercent: document.getElementById('discount-percent').value,
+                discountValue: discountValue,
+                subTotal: subTotal,
+                totalFinal: totalFinal,
+                observations: document.getElementById('observations').value.trim(),
+                products: productsArray
+            };
+        }
+
+        /**
+         * NOVA FUNÇÃO DE SALVAMENTO - Salva no LocalStorage e envia para o Google Sheets.
+         */
+        function saveBudget() {
+            const budgetData = collectBudgetData();
+            const saveBtn = document.getElementById('save-button');
+            
+            if (budgetData.clientName === "") {
+                alert("Preencha ao menos o nome do cliente antes de salvar.");
+                return;
+            }
+
+            // 1. Tenta salvar no localStorage (Backup Local Rápido)
+            try {
+                localStorage.setItem(budgetData.key, JSON.stringify(budgetData));
+            } catch (e) {
+                console.warn("Aviso: Falha ao salvar no localStorage. Tentando salvar apenas na nuvem...");
+            }
+
+            // 2. ENVIA OS DADOS PARA O GOOGLE SHEETS (NUVEM)
+            saveBtn.innerText = 'Salvando na Nuvem...';
+            saveBtn.disabled = true;
+
+            fetch(SHEET_API_URL, {
+                method: 'POST',
+                body: JSON.stringify(budgetData), // Envia todos os dados coletados (JSON)
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('✅ Orçamento salvo na nuvem (Google Sheets) e localmente com sucesso!');
+                    // Após salvar, atualiza o número do orçamento para o próximo disponível
+                    if (budgetData.number && budgetData.number.startsWith('N/N')) {
+                        const nextNumber = parseInt(budgetData.number.substring(3) || '1') + 1;
+                        document.getElementById('budget-number').value = String(nextNumber).padStart(4, '0');
+                    }
+                } else {
+                    alert('⚠️ Atenção: Erro ao salvar o orçamento na nuvem. Verifique a planilha e a conexão. Mensagem: ' + result.message);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Erro de Rede ou CORS ao tentar conectar com a planilha:', error);
+                alert('❌ Erro de conexão com a API da planilha. O orçamento foi salvo *localmente*. Verifique sua internet ou se o URL do Apps Script está correto.');
+            })
+            .finally(() => {
+                // Restaura o botão
+                saveBtn.innerText = '💾 Salvar Orçamento';
+                saveBtn.disabled = false;
+            });
+        }
+        
+        // --- Funções de Inicialização ---
+        function generateNextBudgetNumber() {
+            let maxNumber = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(LS_PREFIX)) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        const num = parseInt(data.number);
+                        if (!isNaN(num) && num > maxNumber) {
+                            maxNumber = num;
+                        }
+                    } catch (e) {
+                         // Ignora erros de parse, foca no número.
+                    }
+                }
+            }
+            // Retorna o próximo número, formatado com 4 dígitos (ex: 0001, 0002)
+            return String(maxNumber + 1).padStart(4, '0');
+        }
+        
+        function loadBudget(key) {
+             const data = JSON.parse(localStorage.getItem(key));
+             if (!data) return;
+             
+             document.getElementById('budget-number').value = data.number || 'N/D';
+             document.getElementById('date').value = data.date || '';
+             document.getElementById('client-name').value = data.clientName || '';
+             document.getElementById('vehicle').value = data.vehicle || '';
+             document.getElementById('plate').value = data.plate || '';
+             document.getElementById('discount-percent').value = data.discountPercent || 0;
+             document.getElementById('observations').value = data.observations || '';
+             
+             productsArray = data.products || [];
+             renderProducts();
+             updateTotal();
+        }
+
+        function init() {
+            // 1. Configura a Data Atual
+            const today = new Date();
+            const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+            document.getElementById('date').value = dateStr;
+
+            // 2. Verifica se está editando (parametro na URL)
+            const urlParams = new URLSearchParams(window.location.search);
+            const key = urlParams.get('key');
+            
+            if (key) {
+                loadBudget(key);
+            } else {
+                 // 3. Define o próximo número de orçamento
+                 document.getElementById('budget-number').value = generateNextBudgetNumber();
+                 updateTotal();
+            }
+
+            // Event listener para recálculo automático
+            document.getElementById('discount-percent').addEventListener('input', updateTotal);
+        }
+
+        // Executa a inicialização ao carregar a página
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
